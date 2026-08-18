@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Polyglot AI Interface</title>
+    <title>Polyglot AI System</title>
     <style>
         body {
             font-family: monospace;
@@ -12,70 +12,127 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
+            padding: 20px;
         }
         .chat-container {
-            width: 500px;
+            width: 520px;
             background: #161b22;
             border: 1px solid #30363d;
-            border-radius: 8px;
+            border-radius: 10px;
             padding: 20px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+            margin-bottom: 20px;
         }
-        h2 { margin-top: 0; color: #58a6ff; text-align: center; }
+        h2 { margin-top: 0; color: #58a6ff; text-align: center; font-size: 18px; }
         #chatBox {
-            height: 250px;
+            height: 200px;
             background: #0d1117;
             border: 1px solid #30363d;
             border-radius: 6px;
-            padding: 10px;
+            padding: 12px;
             overflow-y: auto;
             margin-bottom: 15px;
             font-size: 13px;
         }
-        .input-group {
+        .input-wrapper {
             display: flex;
-            gap: 10px;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 6px;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 10px;
         }
         input[type="text"] {
             flex: 1;
-            background: #0d1117;
-            border: 1px solid #30363d;
-            border-radius: 6px;
-            padding: 10px;
-            color: #ffffff; /* This forces the typed text to be bright white so you can see it! */
+            background: transparent;
+            border: none;
+            padding: 8px;
+            color: #ffffff;
             font-family: monospace;
+            font-size: 14px;
+            outline: none;
         }
         button {
             background: #238636;
             color: white;
             border: none;
-            padding: 10px 15px;
+            padding: 9px 16px;
             font-weight: bold;
             cursor: pointer;
             border-radius: 6px;
+            font-family: monospace;
+            width: 100%;
         }
         button:hover { background: #2ea043; }
+        .chat-btn { width: auto; }
         .message { margin-bottom: 8px; }
         .user-msg { color: #58a6ff; }
         .ai-msg { color: #7ee787; }
+        .status-text { font-size: 12px; text-align: center; margin-top: 8px; }
     </style>
 </head>
 <body>
 
+    <!-- User Account Registration Box -->
+    <div class="chat-container">
+        <h2>👤 User Account Registration</h2>
+        <div class="input-wrapper">
+            <input type="text" id="usernameInput" placeholder="Enter Username...">
+        </div>
+        <div class="input-wrapper">
+            <input type="text" id="emailInput" placeholder="Enter Email...">
+        </div>
+        <button onclick="registerUser()">Sign In / Register</button>
+        <div id="authStatus" class="status-text" style="color: #7ee787;"></div>
+    </div>
+
+    <!-- AI Chat Interface Box -->
     <div class="chat-container">
         <h2>🧠 Polyglot AI System</h2>
         <div id="chatBox">
-            <div class="message ai-msg">[System]: Ready for input. Node.js backend listening...</div>
+            <div class="message ai-msg">[System]: Interface loaded successfully. Ready for backend hookup!</div>
         </div>
-        <div class="input-group">
+        
+        <div class="input-wrapper">
             <input type="text" id="promptInput" placeholder="Type a message..." onkeydown="if(event.key==='Enter') sendPrompt()">
-            <button onclick="sendPrompt()">Send</button>
+            <button class="chat-btn" onclick="sendPrompt()">Send</button>
         </div>
     </div>
 
     <script>
+        // Handle User Registration
+        async function registerUser() {
+            const username = document.getElementById('usernameInput').value.trim();
+            const email = document.getElementById('emailInput').value.trim();
+            const statusDiv = document.getElementById('authStatus');
+
+            if (!username || !email) {
+                statusDiv.style.color = '#f85149';
+                statusDiv.innerText = 'Error: Please fill in both fields.';
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:3000/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, email })
+                });
+
+                const data = await response.json();
+                statusDiv.style.color = '#7ee787';
+                statusDiv.innerText = `Success! User ${data.username} registered.`;
+            } catch (err) {
+                statusDiv.style.color = '#f85149';
+                statusDiv.innerText = 'Error: Could not connect to backend server.';
+            }
+        }
+
+        // Handle Chat Prompts
         async function sendPrompt() {
             const inputField = document.getElementById('promptInput');
             const chatBox = document.getElementById('chatBox');
@@ -83,13 +140,11 @@
 
             if (!promptText) return;
 
-            // Append user message to chat UI
             chatBox.innerHTML += `<div class="message user-msg"><b>You:</b> ${promptText}</div>`;
             inputField.value = '';
             chatBox.scrollTop = chatBox.scrollHeight;
 
             try {
-                // Send to Node.js gateway
                 const response = await fetch('http://localhost:3000/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -97,11 +152,9 @@
                 });
 
                 const data = await response.json();
-                
-                // Display response
                 chatBox.innerHTML += `<div class="message ai-msg"><b>AI:</b> ${data.tpu_simulation || JSON.stringify(data)}</div>`;
             } catch (err) {
-                chatBox.innerHTML += `<div class="message" style="color: #f85149;"><b>Error:</b> Could not reach Node.js server. Is it running?</div>`;
+                chatBox.innerHTML += `<div class="message" style="color: #f85149;"><b>Error:</b> Could not connect to Node.js backend.</div>`;
             }
 
             chatBox.scrollTop = chatBox.scrollHeight;
